@@ -1,24 +1,52 @@
-// Dependencies
-const path = require("path");
-
 const router = require("express").Router();
+const Workouts = require("../models/workouts.js");
 
-// Routes
-// Each of the below routes just handles the HTML page that the user gets sent to.
+router.get("/api/workouts", (req, res) => {
+  Workouts.aggregate([
+    { $addFields: { totalDuration: { $sum: "$exercises.duration" } } },
+  ])
+    .then((dbWorkouts) => {
+      res.json(dbWorkouts);
+    })
+    .catch((err) => {
+      res.status(400).json(err);
+    });
+});
 
-// index route loads view.html
-router.get("/", (req, res) =>
-  res.sendFile(path.join(__dirname, "../public/index.html"))
-);
+router.post("/api/workouts", (req, res) => {
+  Workouts.create(req.body)
+    .then((dbWorkouts) => {
+      console.log("workout created");
+      res.json(dbWorkouts);
+    })
+    .catch((err) => {
+      res.status(400).json(err);
+    });
+});
 
-// cms route loads cms.html
-router.get("/exercise", (req, res) =>
-  res.sendFile(path.join(__dirname, "../public/exercise.html"))
-);
+router.put("/api/workouts/:id", (req, res) => {
+  Workouts.findByIdAndUpdate(req.params.id, { $set: { exercises: req.body } })
+    .then((dbWorkouts) => {
+      console.log("workout updated");
+      res.json(dbWorkouts);
+    })
+    .catch((err) => {
+      res.status(400).json(err);
+    });
+});
 
-// blog route loads blog.html
-router.get("/stats", (req, res) =>
-  res.sendFile(path.join(__dirname, "../public/stats.html"))
-);
+router.get("/api/workouts/range", (req, res) => {
+  Workouts.aggregate([
+    { $addFields: { totalDuration: { $sum: "$exercises.duration" } } },
+  ])
+    .sort({ _id: -1 })
+    .limit(7)
+    .then((dbWorkouts) => {
+      res.json(dbWorkouts);
+    })
+    .catch((err) => {
+      res.status(400).json(err);
+    });
+});
 
 module.exports = router;
